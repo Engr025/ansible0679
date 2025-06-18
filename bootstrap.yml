@@ -1,0 +1,44 @@
+---
+
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: install updates (CentOS)
+    tags: always
+    dnf:
+      update_only: yes
+      update_cache: yes
+    when: ansible_distribution == "CentOS"
+
+  - name: install updates (Ubuntu)
+    tags: always
+    apt:
+      upgrade: dist
+      update_cache: yes
+    when: ansible_distribution == "Ubuntu"
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: create minha user
+    tags: always
+    user:
+      name: minha
+      groups: root
+
+  - name: add ssh key for minha
+    tags: always
+    authorized_key:
+      user: minha
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFfa33Bxbwk7tUVik4vsrdyQzCd8VRiAnk1cKjyO/7f6 Arshad default"
+
+  - name: add sudoers file for minha
+    tags: always
+    copy:
+      src: sudoer_minha
+      dest: /etc/sudoers.d/minha
+      owner: root
+      group: root
+      mode: 0440

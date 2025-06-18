@@ -4,19 +4,29 @@
   become: true
   pre_tasks:
 
-  - name: install updates (CentOS)
+  - name: update repo cache (CentOS)
     tags: always
     dnf:
-      update_only: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "CentOS"
 
-  - name: install updates (Ubuntu)
+  - name: update repo cache (Ubuntu)
     tags: always
     apt:
-      upgrade: dist
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Ubuntu"
+
+- hosts: all
+  become: true
+  tasks:
+
+  - name: add ssh key for minha
+    tags: always
+    authorized_key:
+      user: minha
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFfa33Bxbwk7tUVik4vsrdyQzCd8VRiAnk1cKjyO/7f6 Arshad default"
 
 - hosts: workstations
   become: true
@@ -34,12 +44,13 @@
       mode: 0755
       owner: root
       group: root
+
 - hosts: web_servers
   become: true
   tasks:
 
   - name: install apache package and php
-    tags: apache2,apache,ubuntu
+    tags: apache2,apache,Ubuntu
     apt:
       name: 
         - apache2
@@ -49,12 +60,20 @@
     when: ansible_distribution == "Ubuntu"
 
   - name: install apache and php package
-    tags: httpd,apache,centOS
+    tags: httpd,apache,CentOS
     dnf:
       name: 
         - httpd
         - php
       state: latest
+    when: ansible_distribution == "CentOS"
+
+  - name: start httpd Service for CentOS
+    tags: httpd,apache,CentOS
+    service:
+      name: httpd
+      state: started
+      enabled: yes
     when: ansible_distribution == "CentOS"
 
   - name: copy default html file for site
@@ -65,6 +84,22 @@
       owner: root
       group: root
       mode: 0644
+
+  - name: change e-mail address for admin
+    tags: apache,centos,httpd
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^ServerAdmin'
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_distribution == "CentOS"
+    register: httpd
+
+  - name: restart httpd (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed 
 
 - hosts: db_servers
   become: true
