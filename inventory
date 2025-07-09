@@ -1,5 +1,5 @@
 [web_servers]
-arshad@192.168.2.24
+192.168.2.24
 
 [db_servers]
 ansible-client@192.168.2.22
